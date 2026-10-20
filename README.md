@@ -1,11 +1,16 @@
-# Rubik's Cube Solver - Rust/WebAssembly two-phase engine + Svelte 5 UI
+# Rubik's Cube Solver - Legacy Svelte 5 UI + Rust/WebAssembly two-phase engine
+
+> **Frozen snapshot.** This is the original Svelte 5 UI taken from commit `d528ef9` of the solver
+> repository and kept for reference. Nothing here is deployed and there are no deployment
+> workflows, so a push to `main` cannot publish anything. The current, Rust-only crate lives at
+> <https://github.com/pattygcoding/Rubik-Cube-Solver>.
 
 An interactive 3D Rubik's Cube you can *paint* (by clicking stickers on the cube or on an
 unfolded net) and solve with a Herbert Kociemba style **two-phase search** compiled from Rust
 to WebAssembly. The answer is played back move by move, with a move timeline you can scrub,
 step through forwards and backwards, and re-play at any speed.
 
-**Live: <https://rubik.pattygcoding.com/>** · source: <https://github.com/pattygcoding/Rubix-Cube-Solver>
+Source of this snapshot: <https://github.com/pattygcoding/Rubik-Cube-Solver-Legacy-Svelte>
 
 ```
 ┌──────────────────────┐   wasm-bindgen    ┌───────────────────────┐
@@ -253,17 +258,22 @@ and checks that `validation_error` and `solve_cube` always agree - including on 
 length statistics: median about 20 moves and roughly 10 ms per solve on a desktop CPU, with the
 lookup tables taking about 250 ms to build in the browser.
 
-## Deploying to GitHub Pages
+## Deployment
 
-The site is a build, and `.github/workflows/deploy.yml` does all of it. On every push to `main` it
-runs the solver's Rust tests, then `npm ci`, `npm run check` and `npm run build`, uploads `build/`
-as the Pages artifact and publishes it. Nothing else to run, and no build output in git:
+There is none, deliberately. This snapshot ships without the original
+`.github/workflows/deploy.yml` and without `static/CNAME` and `static/.nojekyll`, so a push to
+`main` runs no workflow and publishes nothing, and Pages is not enabled on this repository.
 
-```powershell
-git add -A; git commit -m "Deploy"; git push
+The site is still a plain static build, so it runs entirely locally:
+
+```bash
+npm ci
+npm run check
+npm run build
+npx vite preview          # or point any static host at build/
 ```
 
-The wasm-bindgen output is committed under `src/lib/wasm-solver/`, so CI needs Node only - no Rust
+The wasm-bindgen output is committed under `src/lib/wasm-solver/`, so a build needs Node only - no Rust
 toolchain and no wasm-pack. Re-run `npm run wasm:build` locally whenever the crate changes, and
 commit the regenerated bindings with it.
 
@@ -272,38 +282,16 @@ files are tracked by force-add - `git add -f src/lib/wasm-solver` - and that gen
 deliberately not committed. Tracked files ignore `.gitignore`, so an ordinary `git add -A` keeps
 updating them from then on.
 
-Watch the run under the repository's **Actions → Deploy to GitHub Pages**; the update goes live at
-<https://rubik.pattygcoding.com/> a minute or two later. A push that fails to test or build simply
-leaves the previous deployment in place.
-
 `vite.config.ts` uses `@sveltejs/adapter-static` and `src/routes/+layout.ts` sets
-`prerender = true`, so the artifact is plain HTML plus assets. Everything that needs a browser - the
-WebAssembly engine and the three.js scene - starts in `onMount`, which is what makes the page
+`prerender = true`, so the build output is plain HTML plus assets. Everything that needs a browser -
+the WebAssembly engine and the three.js scene - starts in `onMount`, which is what makes the page
 prerenderable at all.
 
-Publishing from an artifact needs a one-time setting per repository - Pages publishing from
-**GitHub Actions** instead of from a branch:
-
-```sh
-gh api -X PUT repos/pattygcoding/Rubix-Cube-Solver/pages -f build_type=workflow
-```
-
-The custom domain is a repository setting as well, because an artifact-sourced deployment ignores a
-`CNAME` in the artifact ("no CNAME file is created, and any existing CNAME file is ignored"), so
-`static/CNAME` is kept only as documentation:
-
-```sh
-gh api -X PUT repos/pattygcoding/Rubix-Cube-Solver/pages -f cname=rubik.pattygcoding.com
-```
-
-The subdomain resolves through one DNS record - `rubik` → `pattygcoding.github.io`, the same CNAME
-target the other pattygcoding.com sites use. There is no wildcard on the domain, so each new
-subdomain needs its own record; GitHub issues the certificate for it automatically once the record
-resolves. HTTPS is then enforced on the site, as it is on the other subdomains:
-
-```sh
-gh api -X PUT repos/pattygcoding/Rubix-Cube-Solver/pages -F https_enforced=true
-```
+Bringing Pages back would be exactly the two things this snapshot dropped: the deleted
+`.github/workflows/deploy.yml` job that uploads `build/` with `actions/upload-pages-artifact`, and
+the one-time switch that makes a repository publish from GitHub Actions instead of from a branch
+(`gh api -X PUT repos/<owner>/<repo>/pages -f build_type=workflow`). The custom domain went with
+it, so `static/CNAME` and `static/.nojekyll` are gone as well.
 
 ## Known limitations
 
